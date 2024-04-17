@@ -29,9 +29,15 @@ runCIRToCIRPasses(mlir::ModuleOp theModule, mlir::MLIRContext *mlirCtx,
   mlir::PassManager pm(mlirCtx);
   pm.addPass(mlir::createMergeCleanupsPass());
 
+  // RK TODO better big picture integration
+  auto errorHandler = [&](llvm::Twine msg) {
+    llvm::errs() << msg << "\n";
+    return mlir::failure();
+  };
+
   if (enableLifetime) {
     auto lifetimePass = mlir::createLifetimeCheckPass(&astCtx);
-    if (lifetimePass->initializeOptions(lifetimeOpts).failed()) {
+    if (lifetimePass->initializeOptions(lifetimeOpts, errorHandler).failed()) {
       passOptParsingFailure = lifetimeOpts;
       return mlir::failure();
     }
@@ -40,7 +46,7 @@ runCIRToCIRPasses(mlir::ModuleOp theModule, mlir::MLIRContext *mlirCtx,
 
   if (enableIdiomRecognizer) {
     auto idiomPass = mlir::createIdiomRecognizerPass(&astCtx);
-    if (idiomPass->initializeOptions(idiomRecognizerOpts).failed()) {
+    if (idiomPass->initializeOptions(idiomRecognizerOpts, errorHandler).failed()) {
       passOptParsingFailure = idiomRecognizerOpts;
       return mlir::failure();
     }
@@ -49,7 +55,7 @@ runCIRToCIRPasses(mlir::ModuleOp theModule, mlir::MLIRContext *mlirCtx,
 
   if (enableLibOpt) {
     auto libOpPass = mlir::createLibOptPass(&astCtx);
-    if (libOpPass->initializeOptions(libOptOpts).failed()) {
+    if (libOpPass->initializeOptions(libOptOpts, errorHandler).failed()) {
       passOptParsingFailure = libOptOpts;
       return mlir::failure();
     }
